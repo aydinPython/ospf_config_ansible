@@ -1,0 +1,39 @@
+- name: IOS Device - Interface & OSPF
+  hosts: routers
+  gather_facts: false
+  connection: network_cli
+
+  tasks:
+    - name: configure ETHERNET 0/3 interface both of Routers
+      ios_config:
+        parents: interface Ethernet 0/3
+        lines:
+          - ip address {{ ip_addr }} 255.255.255.0
+          - no shutdown 
+
+    - name: configure LO-0 interface both of Routers
+      ios_config:
+        parents: interface loopback 0
+        lines:
+          - ip address {{ lo_addr }} 255.255.255.0
+          - no shutdown 
+
+    - name: configure OSPF Process 1
+      ios_config:
+        parents: router ospf 1
+        lines:
+          - network 192.168.1.0 0.0.0.255 area 0
+          - network 10.0.0.0 0.0.0.255 area 0
+          - end
+    
+    - name : show current configuration
+      ios_command:
+        commands: show run
+      register: config_output
+
+    - name: show configuration
+      debug:
+        var: config_output.stdout_lines
+    
+    - name: save configuration to config_output file
+      copy: content="{{ config_output.stdout[0] }}" dest=./outputs/{{ inventory_hostname }}.txt
